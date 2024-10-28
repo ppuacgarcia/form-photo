@@ -18,40 +18,71 @@ const HTML_FORM_TEMPLATE = `
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>File Upload</title>
+  <style>
+    /* Ocultar el video y el canvas */
+    #video, #canvas {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <a href="/images">View Images</a>
-  <h1>Capture Photo</h1>
+  <h1>Capture Photo and Submit Form</h1>
+
+  <form id="user-form">
+    <label for="carnet">Carnet:</label>
+    <input type="text" id="carnet" name="carnet" required><br><br>
+
+    <label for="nombre">Nombre:</label>
+    <input type="text" id="nombre" name="nombre" required><br><br>
+
+    <label for="carrera">Carrera:</label>
+    <input type="text" id="carrera" name="carrera" required><br><br>
+
+    <label for="año">Año:</label>
+    <input type="number" id="año" name="año" required><br><br>
+
+    <button type="button" id="snap">Take Photo</button>
+  </form>
+
   <video id="video" width="320" height="240" autoplay></video>
-  <button id="snap">Take Photo</button>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <canvas id="canvas" width="320" height="240"></canvas>
+
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
+    const userForm = document.getElementById('user-form');
 
-    // Iniciar transmisión de video desde la cámara
+    // Iniciar la transmisión de video desde la cámara
     navigator.mediaDevices.getUserMedia({ video: true })
       .then((stream) => {
         video.srcObject = stream;
       })
       .catch((err) => console.error("Error accessing the camera:", err));
 
-    // Capturar la foto al hacer clic en el botón
+    // Capturar la foto y enviar junto con los datos del formulario
     document.getElementById('snap').addEventListener('click', async () => {
+      // Capturar imagen del video
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataURL = canvas.toDataURL('image/png').split(',')[1]; // Base64
+      const dataURL = canvas.toDataURL('image/png').split(',')[1]; // Obtener base64
 
-      // Enviar la imagen al servidor mediante fetch
+      // Recoger los datos del formulario
+      const formData = new FormData(userForm);
+      const userData = Object.fromEntries(formData.entries());
+
+      // Enviar la imagen y los datos al servidor mediante fetch
       try {
         const response = await fetch('/images', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ image: dataURL }),
+          body: JSON.stringify({ ...userData, image: dataURL }),
         });
+
         if (response.ok) {
+          alert('Form and photo submitted successfully!');
+          userForm.reset(); // Limpiar el formulario
           window.location.href = '/images';
         } else {
           console.error('Error uploading image:', await response.text());
@@ -64,6 +95,7 @@ const HTML_FORM_TEMPLATE = `
 </body>
 </html>
 `;
+
 
 const app = express();
 app.use(express.static(path.resolve(__dirname, "public")));
