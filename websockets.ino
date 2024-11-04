@@ -63,5 +63,3 @@ void setup() {
 void loop() {
   webSocket.loop(); // Mantiene la conexión WebSocket activa
 }
-
-
